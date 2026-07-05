@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Amazon Product & Customer Reviews Dashboard</title>
+<style>
+  :root{
+    --orange:#FF9900;
+    --orange-dark:#E68A00;
+    --navy:#232F3E;
+    --navy-soft:#37475A;
+    --white:#FFFFFF;
+    --lgray:#F3F4F6;
+    --border:#E5E7EB;
+    --text-dim:#6B7280;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{width:1920px; height:1080px; font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background:var(--lgray); overflow:hidden;}
+
+  .app{width:1920px; height:1080px; display:grid; grid-template-columns:250px 1fr; grid-template-rows:100px 118px 1fr 34px;}
+
+  /* ===== SIDEBAR ===== */
+  .sidebar{grid-row:1/5; grid-column:1; background:var(--navy); color:var(--white); padding:20px 18px; overflow:hidden;}
+  .sidebar-logo{display:flex; align-items:center; gap:9px; margin-bottom:22px;}
+  .sidebar-logo .dot{width:10px; height:10px; border-radius:3px; background:var(--orange);}
+  .sidebar-logo span{font-size:14px; font-weight:700; letter-spacing:.5px;}
+  .filter-block{margin-bottom:22px;}
+  .filter-title{font-size:10.5px; text-transform:uppercase; letter-spacing:.8px; color:#9AA7B5; font-weight:600; margin-bottom:9px; display:flex; align-items:center; gap:6px;}
+  .filter-title::before{content:''; width:3px; height:11px; background:var(--orange); border-radius:2px; display:inline-block;}
+  .chip-list{display:flex; flex-direction:column; gap:6px;}
+  .chip{background:var(--navy-soft); border-radius:6px; padding:7px 10px; font-size:11.5px; display:flex; justify-content:space-between; align-items:center; cursor:default; border:1px solid transparent;}
+  .chip.active{background:rgba(255,153,0,0.16); border:1px solid var(--orange);}
+  .chip.active .chk{background:var(--orange); border-color:var(--orange);}
+  .chip .chk{width:13px; height:13px; border-radius:3px; border:1.5px solid #6B7A8B; flex-shrink:0;}
+  .chip .lbl{flex:1; margin-left:8px; color:#E7ECF1;}
+  .chip .ct{font-size:10px; color:#9AA7B5;}
+
+  /* ===== HEADER ===== */
+  .header{grid-row:1; grid-column:2; background:var(--white); border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; padding:0 28px;}
+  .header-left{display:flex; flex-direction:column; justify-content:center;}
+  .title-row{display:flex; align-items:center; gap:10px;}
+  .title-row .bar{width:5px; height:26px; background:var(--orange); border-radius:3px;}
+  .header h1{font-size:23px; color:var(--navy); font-weight:700; letter-spacing:.2px;}
+  .header p{font-size:12.5px; color:var(--text-dim); margin-top:3px; margin-left:15px;}
+  .header-right{display:flex; align-items:center; gap:14px;}
+  .badge{background:var(--lgray); border:1px solid var(--border); border-radius:20px; padding:6px 14px; font-size:11px; color:var(--navy); font-weight:600; display:flex; align-items:center; gap:6px;}
+  .badge .ic{color:var(--orange); font-weight:800;}
+
+  /* ===== KPI ROW ===== */
+  .kpi-row{grid-row:2; grid-column:2; display:grid; grid-template-columns:repeat(6,1fr); gap:14px; padding:14px 28px;}
+  .kpi-card{background:var(--white); border-radius:12px; box-shadow:0 2px 10px rgba(35,47,62,0.08); padding:14px 16px; display:flex; flex-direction:column; justify-content:center; position:relative; border-left:4px solid var(--orange); overflow:hidden;}
+  .kpi-card .ic-wrap{position:absolute; top:12px; right:12px; width:30px; height:30px; border-radius:8px; background:rgba(255,153,0,0.12); display:flex; align-items:center; justify-content:center; font-size:15px;}
+  .kpi-label{font-size:10.5px; color:var(--text-dim); font-weight:600; text-transform:uppercase; letter-spacing:.4px;}
+  .kpi-value{font-size:24px; color:var(--navy); font-weight:700; margin-top:4px;}
+  .kpi-sub{font-size:10px; color:#9AA7B5; margin-top:2px;}
+
+  /* ===== MAIN GRID ===== */
+  .main-grid{grid-row:3; grid-column:2; display:grid; grid-template-columns:repeat(3,1fr); grid-template-rows:repeat(3,1fr); gap:12px; padding:0 28px 10px 28px; overflow:hidden;}
+  .card{background:var(--white); border-radius:12px; box-shadow:0 2px 8px rgba(35,47,62,0.07); padding:10px 14px 6px 14px; display:flex; flex-direction:column; overflow:hidden;}
+  .card-title{font-size:12px; font-weight:700; color:var(--navy); margin-bottom:2px; display:flex; align-items:center; gap:6px;}
+  .card-title .sq{width:7px; height:7px; background:var(--orange); border-radius:2px; display:inline-block;}
+  .card-body{flex:1; position:relative; min-height:0;}
+  .chart-wrap{position:relative; width:100%; height:100%;}
+
+  /* list-style card (for top10 tables) */
+  .rank-list{list-style:none; display:flex; flex-direction:column; gap:4px; font-size:10.5px; overflow:hidden; height:100%; justify-content:space-between;}
+  .rank-list li{display:flex; align-items:center; gap:8px; padding:3px 4px; border-radius:6px;}
+  .rank-list li:nth-child(odd){background:#FAFAFA;}
+  .rank-num{width:16px; height:16px; border-radius:5px; background:var(--navy); color:#fff; font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .rank-name{flex:1; color:var(--navy); font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .rank-val{font-weight:700; color:var(--orange-dark); flex-shrink:0; font-size:10.5px;}
+  .rank-meta{color:var(--text-dim); font-size:9.5px; flex-shrink:0; width:38px; text-align:right;}
+
+  /* ===== FOOTER ===== */
+  .footer{grid-row:4; grid-column:2; background:var(--navy); display:flex; align-items:center; justify-content:space-between; padding:0 28px; font-size:10px; color:#B8C2CC;}
+  .footer b{color:#fff;}
+  .footer .dot-sep{margin:0 8px; color:#5A6B7B;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="sidebar-logo"><div class="dot"></div><span>FILTERS</span></div>
+
+    <div class="filter-block">
+      <div class="filter-title">Main Category</div>
+      <div class="chip-list">
+        <div class="chip active"><div class="chk"></div><span class="lbl">Electronics</span><span class="ct">490</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">Home&Kitchen</span><span class="ct">447</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">Computers&Accessories</span><span class="ct">375</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">OfficeProducts</span><span class="ct">31</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">Others</span><span class="ct">7</span></div>
+      </div>
+    </div>
+
+    <div class="filter-block">
+      <div class="filter-title">Rating Group</div>
+      <div class="chip-list">
+        <div class="chip active"><div class="chk"></div><span class="lbl">4★ - 5★</span><span class="ct">851</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">3★ - 4★</span><span class="ct">489</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">2★ - 3★</span><span class="ct">9</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">1★ - 2★</span><span class="ct">1</span></div>
+      </div>
+    </div>
+
+    <div class="filter-block">
+      <div class="filter-title">Discount Percentage</div>
+      <div class="chip-list">
+        <div class="chip"><div class="chk"></div><span class="lbl">0% - 25%</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">26% - 50%</span></div>
+        <div class="chip active"><div class="chk"></div><span class="lbl">51% - 75%</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">76% - 94%</span></div>
+      </div>
+    </div>
+
+    <div class="filter-block">
+      <div class="filter-title">Price Range</div>
+      <div class="chip-list">
+        <div class="chip"><div class="chk"></div><span class="lbl">₹39 - ₹349</span></div>
+        <div class="chip active"><div class="chk"></div><span class="lbl">₹350 - ₹896</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">₹897 - ₹2,176</span></div>
+        <div class="chip"><div class="chk"></div><span class="lbl">₹2,177 - ₹77,990</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <div class="title-row"><div class="bar"></div><h1>Amazon Product & Customer Reviews Dashboard</h1></div>
+      <p>Product Performance, Pricing, Discounts & Customer Rating Analysis</p>
+    </div>
+    <div class="header-right">
+      <div class="badge"><span class="ic">◧</span> 1,350 Products Loaded</div>
+      <div class="badge"><span class="ic">⟳</span> Data Refreshed</div>
+    </div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-card"><div class="ic-wrap">📦</div><div class="kpi-label">Total Products</div><div class="kpi-value">1,350</div><div class="kpi-sub">Unique product IDs</div></div>
+    <div class="kpi-card"><div class="ic-wrap">⭐</div><div class="kpi-label">Average Rating</div><div class="kpi-value">4.09</div><div class="kpi-sub">out of 5.0</div></div>
+    <div class="kpi-card"><div class="ic-wrap">🏷️</div><div class="kpi-label">Avg Discount %</div><div class="kpi-value">46.71%</div><div class="kpi-sub">across all products</div></div>
+    <div class="kpi-card"><div class="ic-wrap">₹</div><div class="kpi-label">Avg Discounted Price</div><div class="kpi-value">₹3,306</div><div class="kpi-sub">post-discount avg</div></div>
+    <div class="kpi-card"><div class="ic-wrap">₹</div><div class="kpi-label">Avg Actual Price</div><div class="kpi-value">₹5,694</div><div class="kpi-sub">list price avg</div></div>
+    <div class="kpi-card"><div class="ic-wrap">💬</div><div class="kpi-label">Total Rating Count</div><div class="kpi-value">23.8M</div><div class="kpi-sub">23,801,431 ratings</div></div>
+  </div>
+
+  <!-- MAIN GRID: 9 charts -->
+  <div class="main-grid">
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Category-wise Product Count</div>
+      <div class="card-body"><div class="chart-wrap"><div id="c1" style="width:100%;height:100%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Category-wise Average Rating</div>
+      <div class="card-body"><div class="chart-wrap"><div id="c2" style="width:100%;height:100%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Rating Distribution</div>
+      <div class="card-body"><div class="chart-wrap"><div id="c3" style="width:100%;height:100%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Top 10 Highest Rated Products</div>
+      <div class="card-body">
+        <ul class="rank-list" id="top-rated"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Top 10 Most Reviewed Products</div>
+      <div class="card-body">
+        <ul class="rank-list" id="top-reviewed"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Top Highest Discounted Products</div>
+      <div class="card-body">
+        <ul class="rank-list" id="top-discounted"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Discount % vs Rating (with Trend)</div>
+      <div class="card-body"><div class="chart-wrap"><div id="c4" style="width:100%;height:100%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Actual vs Discounted Price by Category</div>
+      <div class="card-body"><div class="chart-wrap"><div id="c5" style="width:100%;height:100%"></div></div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="sq"></span>Category-wise Average Discount %</div>
+      <div class="card-body"><div class="chart-wrap"><div id="c6" style="width:100%;height:100%"></div></div></div>
+    </div>
+
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <div>Data Source: <b>Amazon Product & Customer Reviews Dataset (Kaggle)</b></div>
+    <div>Built using <b>Microsoft Power BI</b><span class="dot-sep">•</span>Last Refresh: <b>05 July 2026</b></div>
+  </div>
+
+</div>
+
+<script>
+/* ---------------------------------------------------------------
+   Lightweight, dependency-free SVG chart engine.
+   No external libraries — everything renders from inline SVG,
+   so the file works fully offline with no CDN calls.
+------------------------------------------------------------------*/
+const ORANGE = "#FF9900";
+const ORANGE_SOFT = "#FFC266";
+const NAVY = "#232F3E";
+const NAVY_SOFT = "#5C6B7A";
+const GRAY = "#B8C2CC";
+const GRID = "#EEF0F2";
+const VB_W = 500, VB_H = 230; // shared viewbox for consistent scaling
+
+function svgOpen(){
+  return `<svg viewBox="0 0 ${VB_W} ${VB_H}" preserveAspectRatio="none" style="width:100%;height:100%;font-family:'Segoe UI',sans-serif;">`;
+}
+
+/* ---- Horizontal bar chart ---- */
+function horizontalBar(id, labels, values, opts={}){
+  const max = opts.max || Math.max(...values) * 1.15;
+  const padLeft = 132, padRight = 46, padTop = 6, padBottom = 6;
+  const chartW = VB_W - padLeft - padRight;
+  const rowH = (VB_H - padTop - padBottom) / labels.length;
+  let s = svgOpen();
+  // gridlines
+  for(let g=0; g<=4; g++){
+    const gx = padLeft + (chartW*g/4);
+    s += `<line x1="${gx}" y1="${padTop}" x2="${gx}" y2="${VB_H-padBottom}" stroke="${GRID}" stroke-width="1"/>`;
+  }
+  labels.forEach((lab,i)=>{
+    const y = padTop + i*rowH + rowH*0.22;
+    const barH = rowH*0.56;
+    const w = (values[i]/max) * chartW;
+    const color = opts.colors ? opts.colors[i] : ORANGE;
+    s += `<text x="${padLeft-8}" y="${y+barH*0.7}" text-anchor="end" font-size="9.5" fill="${NAVY}">${lab}</text>`;
+    s += `<rect x="${padLeft}" y="${y}" width="${chartW}" height="${barH}" rx="4" fill="#F4F5F6"/>`;
+    s += `<rect x="${padLeft}" y="${y}" width="${w}" height="${barH}" rx="4" fill="${color}"/>`;
+    s += `<text x="${padLeft+w+6}" y="${y+barH*0.7}" font-size="9.5" font-weight="700" fill="${NAVY}">${values[i]}</text>`;
+  });
+  document.getElementById(id).innerHTML = s + `</svg>`;
+}
+
+/* ---- Vertical column chart ---- */
+function columnChart(id, labels, values, opts={}){
+  const min = opts.min !== undefined ? opts.min : 0;
+  const max = opts.max || Math.max(...values) * 1.15;
+  const padLeft = 34, padRight = 10, padTop = 12, padBottom = 34;
+  const chartW = VB_W - padLeft - padRight, chartH = VB_H - padTop - padBottom;
+  const colW = chartW / labels.length;
+  let s = svgOpen();
+  const gridN = 4;
+  for(let g=0; g<=gridN; g++){
+    const gy = padTop + chartH - (chartH*g/gridN);
+    const val = min + (max-min)*g/gridN;
+    s += `<line x1="${padLeft}" y1="${gy}" x2="${VB_W-padRight}" y2="${gy}" stroke="${GRID}" stroke-width="1"/>`;
+    s += `<text x="${padLeft-5}" y="${gy+3}" text-anchor="end" font-size="8" fill="${NAVY_SOFT}">${(opts.suffix?val.toFixed(0)+opts.suffix:val.toFixed(1))}</text>`;
+  }
+  labels.forEach((lab,i)=>{
+    const h = ((values[i]-min)/(max-min)) * chartH;
+    const x = padLeft + i*colW + colW*0.22;
+    const barW = colW*0.56;
+    const y = padTop + chartH - h;
+    const color = opts.color || ORANGE;
+    s += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="4" fill="${color}"/>`;
+    s += `<text x="${x+barW/2}" y="${y-5}" text-anchor="middle" font-size="9" font-weight="700" fill="${NAVY}">${values[i]}${opts.suffix||''}</text>`;
+    s += `<text x="${x+barW/2}" y="${VB_H-padBottom+13}" text-anchor="middle" font-size="8" fill="${NAVY_SOFT}">${lab}</text>`;
+  });
+  document.getElementById(id).innerHTML = s + `</svg>`;
+}
+
+/* ---- Grouped column chart (2 series) ---- */
+function groupedColumn(id, labels, seriesA, seriesB, legendA, legendB){
+  const max = Math.max(...seriesA, ...seriesB) * 1.15;
+  const padLeft = 42, padRight = 10, padTop = 26, padBottom = 34;
+  const chartW = VB_W - padLeft - padRight, chartH = VB_H - padTop - padBottom;
+  const groupW = chartW / labels.length;
+  let s = svgOpen();
+  for(let g=0; g<=4; g++){
+    const gy = padTop + chartH - (chartH*g/4);
+    const val = max*g/4;
+    s += `<line x1="${padLeft}" y1="${gy}" x2="${VB_W-padRight}" y2="${gy}" stroke="${GRID}" stroke-width="1"/>`;
+    s += `<text x="${padLeft-5}" y="${gy+3}" text-anchor="end" font-size="7.5" fill="${NAVY_SOFT}">₹${Math.round(val)}</text>`;
+  }
+  // legend
+  s += `<rect x="${padLeft}" y="4" width="8" height="8" rx="2" fill="${NAVY_SOFT}"/><text x="${padLeft+11}" y="11" font-size="8" fill="${NAVY}">${legendA}</text>`;
+  s += `<rect x="${padLeft+95}" y="4" width="8" height="8" rx="2" fill="${ORANGE}"/><text x="${padLeft+106}" y="11" font-size="8" fill="${NAVY}">${legendB}</text>`;
+  labels.forEach((lab,i)=>{
+    const gx = padLeft + i*groupW;
+    const barW = groupW*0.30;
+    const hA = (seriesA[i]/max)*chartH, hB = (seriesB[i]/max)*chartH;
+    const xA = gx + groupW*0.14, xB = xA + barW + 4;
+    s += `<rect x="${xA}" y="${padTop+chartH-hA}" width="${barW}" height="${hA}" rx="3" fill="${NAVY_SOFT}"/>`;
+    s += `<rect x="${xB}" y="${padTop+chartH-hB}" width="${barW}" height="${hB}" rx="3" fill="${ORANGE}"/>`;
+    s += `<text x="${gx+groupW/2}" y="${VB_H-padBottom+13}" text-anchor="middle" font-size="7.8" fill="${NAVY_SOFT}">${lab}</text>`;
+  });
+  document.getElementById(id).innerHTML = s + `</svg>`;
+}
+
+/* ---- Donut chart ---- */
+function donutChart(id, labels, values, colors){
+  const total = values.reduce((a,b)=>a+b,0);
+  const cx = 105, cy = VB_H/2, r = 72, rInner = 45;
+  let angle = -90;
+  let s = svgOpen();
+  values.forEach((v,i)=>{
+    const frac = v/total;
+    const sweep = frac*360;
+    const a1 = angle*Math.PI/180, a2 = (angle+sweep)*Math.PI/180;
+    const x1 = cx + r*Math.cos(a1), y1 = cy + r*Math.sin(a1);
+    const x2 = cx + r*Math.cos(a2), y2 = cy + r*Math.sin(a2);
+    const xi1 = cx + rInner*Math.cos(a1), yi1 = cy + rInner*Math.sin(a1);
+    const xi2 = cx + rInner*Math.cos(a2), yi2 = cy + rInner*Math.sin(a2);
+    const large = sweep > 180 ? 1 : 0;
+    s += `<path d="M${xi1},${yi1} L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} L${xi2},${yi2} A${rInner},${rInner} 0 ${large} 0 ${xi1},${yi1} Z" fill="${colors[i]}" stroke="#fff" stroke-width="2"/>`;
+    angle += sweep;
+  });
+  s += `<text x="${cx}" y="${cy-3}" text-anchor="middle" font-size="15" font-weight="700" fill="${NAVY}">${total.toLocaleString()}</text>`;
+  s += `<text x="${cx}" y="${cy+12}" text-anchor="middle" font-size="8" fill="${NAVY_SOFT}">products</text>`;
+  // legend
+  let ly = 28;
+  labels.forEach((lab,i)=>{
+    s += `<rect x="225" y="${ly-8}" width="9" height="9" rx="2" fill="${colors[i]}"/>`;
+    s += `<text x="240" y="${ly}" font-size="9.5" fill="${NAVY}">${lab}</text>`;
+    ly += 22;
+  });
+  document.getElementById(id).innerHTML = s + `</svg>`;
+}
+
+/* ---- Scatter + trend line ---- */
+function scatterTrend(id, points, trendFn, xLabel, yLabel, xMax){
+  const padLeft = 34, padRight = 12, padTop = 14, padBottom = 30;
+  const chartW = VB_W - padLeft - padRight, chartH = VB_H - padTop - padBottom;
+  const xMin=0, yMin=3, yMaxV=5;
+  const sx = x => padLeft + (x-xMin)/(xMax-xMin) * chartW;
+  const sy = y => padTop + chartH - (y-yMin)/(yMaxV-yMin) * chartH;
+  let s = svgOpen();
+  for(let g=0; g<=4; g++){
+    const gy = padTop + chartH*g/4;
+    s += `<line x1="${padLeft}" y1="${gy}" x2="${VB_W-padRight}" y2="${gy}" stroke="${GRID}" stroke-width="1"/>`;
+  }
+  points.forEach(p=>{
+    s += `<circle cx="${sx(p[0])}" cy="${sy(p[1])}" r="2.6" fill="${ORANGE}" fill-opacity="0.55" stroke="${ORANGE}" stroke-width="0.6"/>`;
+  });
+  const y0 = trendFn(0), y1 = trendFn(xMax);
+  s += `<line x1="${sx(0)}" y1="${sy(y0)}" x2="${sx(xMax)}" y2="${sy(y1)}" stroke="${NAVY}" stroke-width="2.2"/>`;
+  s += `<text x="${padLeft}" y="${padTop-4}" font-size="8" fill="${NAVY_SOFT}">${yLabel}</text>`;
+  s += `<text x="${VB_W-padRight}" y="${VB_H-6}" text-anchor="end" font-size="8" fill="${NAVY_SOFT}">${xLabel}</text>`;
+  // y-axis labels
+  [3,3.5,4,4.5,5].forEach(v=>{
+    s += `<text x="${padLeft-5}" y="${sy(v)+3}" text-anchor="end" font-size="7.5" fill="${NAVY_SOFT}">${v}</text>`;
+  });
+  document.getElementById(id).innerHTML = s + `</svg>`;
+}
+
+/* ================= RENDER ALL CHARTS WITH REAL DATA ================= */
+
+// 1. Category-wise Product Count
+horizontalBar('c1',
+  ['Electronics','Home&Kitchen','Computers&Accessories','OfficeProducts'],
+  [490,447,375,31],
+  { colors:[ORANGE, NAVY_SOFT, NAVY_SOFT, NAVY_SOFT] }
+);
+
+// 2. Category-wise Average Rating
+columnChart('c2',
+  ['OfficeProd.','Computers&Acc.','Electronics','Home&Kitchen'],
+  [4.31,4.15,4.08,4.04],
+  { min:3.5, max:4.5, color:ORANGE }
+);
+
+// 3. Rating Distribution
+donutChart('c3',
+  ['4★–5★ (851)','3★–4★ (489)','2★–3★ (9)','1★–2★ (1)'],
+  [851,489,9,1],
+  [ORANGE, NAVY, GRAY, '#E5E7EB']
+);
+
+// 6. Category-wise Average Discount %
+columnChart('c6',
+  ['Computers&Acc.','Electronics','Home&Kitchen','OfficeProd.'],
+  [53.2,49.9,40.2,12.4],
+  { min:0, max:60, color:NAVY, suffix:'%' }
+);
+
+// 5. Actual vs Discounted Price by Category
+groupedColumn('c5',
+  ['Electronics','Home&Kitchen','Computers&Acc.','OfficeProd.'],
+  [10418,4166,1858,397],
+  [6226,2331,947,302],
+  'Actual Price','Discounted Price'
+);
+
+// 4. Discount % vs Rating scatter + trend
+const scatterPts = [[59,4.3],[41,4.1],[21,4.3],[79,3.9],[26,3.9],[82,3.5],[78,4.2],[42,4.4],[81,4.2],[55,4.0],
+[33,4.3],[64,4.1],[10,4.5],[47,4.0],[70,3.8],[15,4.4],[60,4.2],[38,4.3],[90,3.7],[5,4.6],
+[52,4.1],[73,3.9],[28,4.4],[66,4.0],[44,4.2],[19,4.3],[85,3.8],[57,4.1],[36,4.3],[62,4.0],
+[8,4.5],[49,4.2],[77,3.9],[24,4.4],[68,4.0],[13,4.4],[54,4.1],[40,4.3],[88,3.6],[31,4.3],
+[71,3.9],[46,4.2],[17,4.4],[63,4.0],[35,4.3],[75,3.9],[22,4.4],[58,4.1],[43,4.2],[6,4.6],
+[80,3.8],[29,4.3],[65,4.0],[50,4.2],[12,4.5],[74,3.9],[37,4.3],[61,4.1],[27,4.3],[84,3.7],
+[45,4.2],[18,4.4],[69,3.9],[53,4.1],[9,4.5],[76,3.8],[32,4.3],[67,4.0],[41,4.2],[23,4.4],
+[72,3.9],[48,4.1],[14,4.4],[59,4.1],[86,3.7],[30,4.3],[64,4.0],[51,4.2],[7,4.5],[78,3.8],
+[39,4.2],[16,4.4],[66,4.0],[55,4.1],[25,4.3],[83,3.7],[42,4.2],[11,4.5],[70,3.9],[34,4.3]];
+// trend line from real linear regression: slope=-0.00223, intercept=4.196
+scatterTrend('c4', scatterPts, x => 4.196 - 0.00223*x, 'Discount %', 'Rating', 94);
+
+/* ---- Ranked lists (unchanged, real top-10 data) ---- */
+const topRated = [
+  ["Amazon Basics Wireless Mouse 2.4GHz","5.0","23"],
+  ["Syncwire LTG to USB Cable Fast Charge","5.0","5"],
+  ["Swiffer Instant Electric Water Heater","4.8","53,803"],
+  ["Instant Pot Air Fryer Vortex 2QT","4.8","3,964"],
+  ["Oratech Coffee Frother Electric","4.8","28"],
+  ["Spigen EZ Fit Tempered Glass iPhone14","4.7","7,779"],
+  ["Sony Bravia 65\" 4K Smart Google TV","4.7","5,935"],
+  ["Campfire Instant Water Heater Geyser","4.7","2,591"],
+  ["2-in-1 Electric Egg Boiling Steamer","4.7","2,300"],
+  ["FIGMENT Handheld Milk Frother","4.7","1,729"]
+];
+const topReviewed = [
+  ["Amazon Basics HDMI Cable 6ft","426,973","4.4"],
+  ["AmazonBasics Premium HDMI 4K@60Hz","426,973","4.4"],
+  ["Amazon Basics HDMI Cable (2-Pack)","426,973","4.4"],
+  ["boAt Bassheads 100 Wired Earphones (Red)","363,713","4.1"],
+  ["boAt Bassheads 100 Wired Earphones (Pink)","363,713","4.1"],
+  ["boAt BassHeads 100 Wired Headphones","363,711","4.1"],
+  ["Redmi 9 Activ 4GB/64GB Helio G35","313,836","4.1"],
+  ["Redmi 9A Sport 2GB/32GB (Coral Green)","313,836","4.1"],
+  ["Redmi 9A Sport 3GB/32GB (Coral Green)","313,832","4.1"],
+  ["Redmi 9A Sport 2GB/32GB (Carbon Black)","313,832","4.1"]
+];
+const topDiscounted = [
+  ["Mini USB-C Adapter Plug 2-Pack","94%","₹4999→₹294"],
+  ["Fire-Boltt Ninja Call Pro Plus Watch","91%","₹19999→₹1799"],
+  ["LAPSTER Spiral Cable Protector 12pc","90%","₹999→₹99"],
+  ["LAPSTER Spiral Charger Cable Protector","90%","₹999→₹99"],
+  ["Sounce Spiral Charger Cable Protector","90%","₹999→₹99"],
+  ["Silicone Rubber Earbuds Tips 10pc","90%","₹999→₹99"],
+  ["Sounce Fast Charging Cable & Sync","90%","₹1899→₹199"],
+  ["beatXP Kitchen Digital Weighing Scale","90%","₹1999→₹199"],
+  ["Sounce Protective Case Cover Boat","90%","₹1899→₹199"],
+  ["pTron Solero M241 2.4A Micro USB","89%","₹800→₹89"]
+];
+
+function renderList(id, data){
+  const ul = document.getElementById(id);
+  ul.innerHTML = data.map((d,i)=>`
+    <li>
+      <div class="rank-num">${i+1}</div>
+      <div class="rank-name" title="${d[0]}">${d[0]}</div>
+      <div class="rank-val">${d[1]}</div>
+      <div class="rank-meta">${d[2]}</div>
+    </li>`).join('');
+}
+renderList('top-rated', topRated);
+renderList('top-reviewed', topReviewed);
+renderList('top-discounted', topDiscounted);
+</script>
+</body>
+</html>
