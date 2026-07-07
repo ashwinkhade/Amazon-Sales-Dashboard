@@ -4,11 +4,42 @@ A Power BI–style dashboard built from a real Amazon products & reviews dataset
 
 ![Dashboard Preview](preview.png)
 
-## Live Demo
-Enable GitHub Pages on this repo (Settings → Pages → deploy from `main`) and it'll be live at:
-`https://ashwinkhade.github.io/amazon-dashboard/`
+### Tools & Technologies
+- Power BI
+- Power Query
+- DAX
+- Microsoft Excel
 
-Or just open `index.html` in any browser — no installs, no dependencies, nothing to run.
+### Dashboard Features
+- Interactive KPI cards
+- Category-wise product analysis
+- Rating and discount analysis
+- Top-rated and most-reviewed products
+- Price comparison (Actual vs Discounted)
+- Interactive filters and slicers
+
+### Skills Demonstrated
+- Data Cleaning
+- Data Transformation
+- Data Modeling
+- DAX Calculations
+- Data Visualization
+- Dashboard Design
+
+### Dataset
+This project uses the Amazon Product & Customer Reviews dataset from Kaggle to analyze product performance, pricing, discounts, ratings, and customer reviews.
+
+### Repository Contents
+- `amazon.csv` – Dataset
+- `preview.png` – Dashboard Preview
+- `index.html` – Exported Dashboard
+- `README.md` – Project Documentation
+
+### Future Improvements
+- Add advanced DAX measures
+- Improve dashboard design
+- Add sales trend analysis
+- Create a mobile-friendly dashboard
 
 ## What's in it
 
